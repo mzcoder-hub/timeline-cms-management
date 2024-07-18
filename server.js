@@ -113,7 +113,7 @@ app.get('/api/timelines/overdue', async (req, res) => {
     });
     res.json(timelines);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch overdue timelines' });
+    res.status(204).json({ error: 'Failed to fetch overdue timelines' });
   }
 });
 
@@ -128,7 +128,7 @@ app.get('/api/timelines/upcoming', async (req, res) => {
     });
     res.json(timelines);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch upcoming timelines' });
+    res.status(204).json({ error: 'Failed to fetch upcoming timelines' });
   }
 });
 
