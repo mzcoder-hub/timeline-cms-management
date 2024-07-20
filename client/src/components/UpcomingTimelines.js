@@ -12,7 +12,11 @@ const UpcomingTimelines = () => {
 
   const fetchUpcomingTimelines = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/timelines/upcoming');
+      const response = await axios.get('http://localhost:5000/api/timelines/upcoming', {
+        headers : {
+         Authorization : `${localStorage.getItem('token')}`
+        }
+      });
       setUpcomingTimelines(response.data);
     } catch (error) {
       console.error('Error fetching upcoming timelines:', error);
