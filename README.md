@@ -1,7 +1,7 @@
 # Multi-Timeline CMS
 
 ![Single Timeline](https://mzn0.dev/screencapture-localhost-3000-2024-07-20-19_22_23%20(1).png)
-![Show Detail](screencapture-localhost-3000-2024-07-20-19_22_54.png)
+![Show Detail](https://mzn0.dev/screencapture-localhost-3000-2024-07-20-19_22_54.png)
 
 This is a simple CMS (Content Management System) for managing multiple timelines. It includes functionalities for adding, editing, viewing, and deleting timelines and their associated content. The project is built using React for the frontend and Node.js with Express for the backend, and it uses SQLite as the database.
 
