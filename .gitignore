@@ -1,6 +1,9 @@
 client/node_modules
 database.sqlite
 package-lock.json
+uploads/
+
+.env
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 

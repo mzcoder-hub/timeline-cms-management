@@ -12,7 +12,11 @@ const OverdueTimelines = () => {
 
   const fetchOverdueTimelines = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/timelines/overdue');
+      const response = await axios.get('http://localhost:5000/api/timelines/overdue', {
+        headers : {
+         Authorization : `${localStorage.getItem('token')}`
+        }
+      });
       setOverdueTimelines(response.data);
     } catch (error) {
       console.error('Error fetching overdue timelines:', error);
