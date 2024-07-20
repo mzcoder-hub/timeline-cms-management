@@ -5,12 +5,14 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const timelineRoutes = require('./routes/timeline');
 const contentRoutes = require('./routes/content');
+const backupRoutes = require('./routes/backup')
 const auth = require('./middleware/auth');
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
+app.use('/api/backup', backupRoutes)
 app.use('/api/auth', authRoutes);
 app.use('/api/timelines', timelineRoutes);
 app.use('/api/content', contentRoutes);
