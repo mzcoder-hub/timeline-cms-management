@@ -1,27 +1,32 @@
 // src/components/Home.js
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
+import moment from 'moment';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import DataTable from 'react-data-table-component';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import OverdueTimelines from './OverdueTimelines';
 import UpcomingTimelines from './UpcomingTimelines';
 import ContentModal from './modal/contentModal';
 import { AuthContext } from '../AuthContext';
+import { Container, Row, Col, Card, Button, Form as BootstrapForm, Alert } from 'react-bootstrap';
+
+const localizer = momentLocalizer(moment);
 
 function Home() {
   const [timelines, setTimelines] = useState([]);
   const [selectedTimeline, setSelectedTimeline] = useState(null);
-  const [statusModal, setStatusModal ] = useState(false)
+  const [statusModal, setStatusModal] = useState(false);
   const [content, setContent] = useState([]);
   const [modalContent, setModalContent] = useState(null);
   const { logout } = useContext(AuthContext);
 
   const fetchTimelines = async () => {
     const response = await axios.get('http://localhost:5000/api/timelines', {
-      headers : {
-       Authorization : `Bearer ${localStorage.getItem('token')}`
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     });
     setTimelines(response.data);
@@ -29,8 +34,8 @@ function Home() {
 
   const fetchContent = async (timelineId) => {
     const response = await axios.get(`http://localhost:5000/api/content/${timelineId}`, {
-      headers : {
-       Authorization : `Bearer ${localStorage.getItem('token')}`
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     });
     setContent(response.data);
@@ -43,178 +48,219 @@ function Home() {
 
   const setViewValue = (content) => {
     setModalContent(content);
-    setStatusModal(true)
+    setStatusModal(true);
   };
 
   useEffect(() => {
     fetchTimelines();
   }, []);
 
-  const columns = [
-    {
-      name: 'Title',
-      selector: row => row.title,
-      sortable: true,
-      width: '150px',
-    },
-    {
-      name: 'Body',
-      selector: row => row.body,
-      width: '250px',
-    },
-    {
-      name: 'Deadline',
-      selector: row => row.deadline ? new Date(row.deadline).toLocaleDateString() : 'N/A',
-      sortable: true,
-      width: '100px'
-    },
-    {
-      name: 'Due Date',
-      selector: row => row.dueDate ? new Date(row.dueDate).toLocaleDateString() : 'N/A',
-      sortable: true,
-      width: '100px'
-    },
-    {
-      name: 'File',
-      cell: row => row.filePath ? <a className="btn btn-danger btn-sm" href={`http://localhost:5000/${row.filePath}`} download>Download File</a> : 'No File',
-      width : '150px'
-    },
-    {
-      name : 'Action',
-      cell : row => <button className='btn btn-warning btn-sm' onClick={() => setViewValue(row)}>View</button>
-    }
-  ];
+  const events = content.map(item => ({
+    title: item.title,
+    start: item.deadline ? new Date(item.deadline) : new Date(),
+    end: item.dueDate ? new Date(item.dueDate) : new Date(),
+    allDay: true,
+    resource: item
+  }));
+
+  const handleSelectEvent = (event) => {
+    setViewValue(event.resource);
+  };
 
   return (
-    <div className="container">
-      <button className="btn btn-danger" onClick={logout}>Logout</button>
-      <hr></hr>
-      <h1>Timeline CMS</h1>
-      <hr></hr>
-      <div className="row">
-        <div className="col-md-4">
-          <div className='mb-4'>
-            <h2>Timelines</h2>
-            <ul className="list-group">
-              {timelines.map(timeline => (
-                <li key={timeline.id} className="list-group-item" onClick={() => handleTimelineChange(timeline)}>
-                  {timeline.name}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <h3>Add New Timeline</h3>
-          <Formik
-            initialValues={{ name: '' }}
-            validationSchema={Yup.object({
-              name: Yup.string().required('Required')
-            })}
-            onSubmit={async (values, { setSubmitting, resetForm }) => {
-              await axios.post('http://localhost:5000/api/timelines', values, {
-                headers : {
-                  Authorization : `Bearer ${localStorage.getItem('token')}`
-                }
-              });
-              resetForm();
-              fetchTimelines();
-              setSubmitting(false);
-            }}
-          >
-            {({ isSubmitting }) => (
-              <Form>
-                <div className="form-group mb-3">
-                  <label htmlFor="name">Timeline Name</label>
-                  <Field name="name" type="text" className="form-control" />
-                  <ErrorMessage name="name" component="div" className="text-danger" />
-                </div>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                  Add Timeline
-                </button>
-              </Form>
-            )}
-          </Formik>
-        </div>
-        <div className="col-md-8">
-          {selectedTimeline ? (
-            <>
-              <h2>Content for {selectedTimeline.name}</h2>
-              <button className='btn btn-warning' onClick={(e) => {e.preventDefault(); setSelectedTimeline(null)}}>
-                Back To Home
-              </button>
-              <DataTable
-                columns={columns}
-                data={content}
-                pagination
-              />
+    <Container className="py-4">
+      <Row>
+        <Col className="text-end">
+          <Button variant="danger" onClick={logout}>Logout</Button>
+        </Col>
+      </Row>
+      <Row className="my-4">
+        <Col>
+          <h1 className="text-center">Timeline CMS</h1>
+          <hr />
+        </Col>
+      </Row>
+      <Row>
+        <Col md={4}>
+          <Card className="mb-4">
+            <Card.Body>
+              <Card.Title>
+                <Row>
+                  <Col md={6}>Timelines</Col>
+                  <Col md={6}>
+                    <div style={{ float: 'right' }}>
+                      <Button variant="primary" onClick={() => {
+                        axios.get('http://localhost:5000/api/backup/contents', {
+                          headers: {
+                            Authorization: `Bearer ${localStorage.getItem('token')}`
+                          }
+                        })
+                      }} className="mb-3">
+                        Backup Timeline
+                      </Button>
+                    </div>
+                  </Col>
+                </Row>
+              </Card.Title>
+              <ul className="list-group">
+                {timelines.map(timeline => (
+                  <li key={timeline.id} className="list-group-item" onClick={() => handleTimelineChange(timeline)}>
+                    {timeline.name}
+                  </li>
+                ))}
+              </ul>
+            </Card.Body>
+          </Card>
+          <Card>
+            <Card.Body>
+              <Card.Title>Add New Timeline</Card.Title>
               <Formik
-                initialValues={{ title: '', body: '', deadline: '', dueDate: '', file: null }}
+                initialValues={{ name: '' }}
                 validationSchema={Yup.object({
-                  title: Yup.string().required('Required'),
-                  body: Yup.string().required('Required'),
-                  deadline: Yup.date().nullable(),
-                  dueDate: Yup.date().nullable(),
+                  name: Yup.string().required('Required')
                 })}
                 onSubmit={async (values, { setSubmitting, resetForm }) => {
-                  const formData = new FormData();
-                  formData.append('title', values.title);
-                  formData.append('body', values.body);
-                  formData.append('timelineId', selectedTimeline.id);
-                  formData.append('deadline', values.deadline);
-                  formData.append('dueDate', values.dueDate);
-                  if (values.file) {
-                    formData.append('file', values.file);
-                  }
-                  await axios.post('http://localhost:5000/api/content', formData, {
+                  await axios.post('http://localhost:5000/api/timelines', values, {
                     headers: {
-                      'Content-Type': 'multipart/form-data',
-                    Authorization : `Bearer ${localStorage.getItem('token')}`
+                      Authorization: `Bearer ${localStorage.getItem('token')}`
                     }
                   });
                   resetForm();
-                  fetchContent(selectedTimeline.id);
+                  fetchTimelines();
                   setSubmitting(false);
                 }}
               >
-                {({ isSubmitting, setFieldValue }) => (
+                {({ isSubmitting }) => (
                   <Form>
-                    <div className="form-group mb-3">
-                      <label htmlFor="title">Title</label>
-                      <Field name="title" type="text" className="form-control" />
-                      <ErrorMessage name="title" component="div" className="text-danger" />
-                    </div>
-                    <div className="form-group mb-3">
-                      <label htmlFor="body">Body</label>
-                      <Field name="body" as="textarea" className="form-control" />
-                      <ErrorMessage name="body" component="div" className="text-danger" />
-                    </div>
-                    <div className="form-group mb-3">
-                      <label htmlFor="deadline">Deadline</label>
-                      <Field name="deadline" type="date" className="form-control" />
-                      <ErrorMessage name="deadline" component="div" className="text-danger" />
-                    </div>
-                    <div className="form-group mb-3">
-                      <label htmlFor="dueDate">Due Date</label>
-                      <Field name="dueDate" type="date" className="form-control" />
-                      <ErrorMessage name="dueDate" component="div" className="text-danger" />
-                    </div>
-                    <div className="form-group mb-3">
-                      <label htmlFor="file">Upload File</label>
-                      <input
-                        id="file"
-                        name="file"
-                        type="file"
-                        className="form-control"
-                        onChange={(event) => {
-                          setFieldValue('file', event.currentTarget.files[0]);
-                        }}
-                      />
-                    </div>
-                    <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                      Add Content
-                    </button>
+                    <BootstrapForm.Group className="mb-3">
+                      <BootstrapForm.Label htmlFor="name">Timeline Name</BootstrapForm.Label>
+                      <Field name="name" type="text" className="form-control" />
+                      <ErrorMessage name="name" component="div" className="text-danger" />
+                    </BootstrapForm.Group>
+                    <Button type="submit" variant="primary" disabled={isSubmitting} className="w-100">
+                      Add Timeline
+                    </Button>
                   </Form>
                 )}
               </Formik>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={8}>
+          {selectedTimeline ? (
+            <>
+              <Card className="mb-4">
+                <Card.Body>
+                  <Card.Title>Content for {selectedTimeline.name}</Card.Title>
+                  <hr></hr>
+                  <Row>
+                    <Col md={6}>
+                      <div style={{ float: 'left' }}>
+                        <Button variant="primary" onClick={() => {
+                          axios.get('http://localhost:5000/api/backup/contents', {
+                            headers: {
+                              Authorization: `Bearer ${localStorage.getItem('token')}`
+                            }
+                          })
+                        }} className="mb-3">
+                          Backup Content
+                        </Button>
+                      </div>
+                    </Col>
+                    <Col md={6}>
+                      <div style={{ float: 'right' }}>
+                        <Button variant="warning" onClick={() => setSelectedTimeline(null)} className="mb-3">
+                          Back To Home
+                        </Button>
+                      </div>
+                    </Col>
+                  </Row>
+                  <hr></hr>
+                  <Calendar
+                    localizer={localizer}
+                    events={events}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: 500 }}
+                    onSelectEvent={handleSelectEvent}
+                    views={['month', 'week', 'day']}
+                  />
+                </Card.Body>
+              </Card>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Add New Content</Card.Title>
+                  <Formik
+                    initialValues={{ title: '', body: '', deadline: '', dueDate: '', file: null }}
+                    validationSchema={Yup.object({
+                      title: Yup.string().required('Required'),
+                      body: Yup.string().required('Required'),
+                      deadline: Yup.date().nullable(),
+                      dueDate: Yup.date().nullable(),
+                    })}
+                    onSubmit={async (values, { setSubmitting, resetForm }) => {
+                      const formData = new FormData();
+                      formData.append('title', values.title);
+                      formData.append('body', values.body);
+                      formData.append('timelineId', selectedTimeline.id);
+                      formData.append('deadline', values.deadline);
+                      formData.append('dueDate', values.dueDate);
+                      if (values.file) {
+                        formData.append('file', values.file);
+                      }
+                      await axios.post('http://localhost:5000/api/content', formData, {
+                        headers: {
+                          'Content-Type': 'multipart/form-data',
+                          Authorization: `Bearer ${localStorage.getItem('token')}`
+                        }
+                      });
+                      resetForm();
+                      fetchContent(selectedTimeline.id);
+                      setSubmitting(false);
+                    }}
+                  >
+                    {({ isSubmitting, setFieldValue }) => (
+                      <Form>
+                        <BootstrapForm.Group className="mb-3">
+                          <BootstrapForm.Label htmlFor="title">Title</BootstrapForm.Label>
+                          <Field name="title" type="text" className="form-control" />
+                          <ErrorMessage name="title" component="div" className="text-danger" />
+                        </BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3">
+                          <BootstrapForm.Label htmlFor="body">Body</BootstrapForm.Label>
+                          <Field name="body" as="textarea" className="form-control" />
+                          <ErrorMessage name="body" component="div" className="text-danger" />
+                        </BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3">
+                          <BootstrapForm.Label htmlFor="deadline">Deadline</BootstrapForm.Label>
+                          <Field name="deadline" type="date" className="form-control" />
+                          <ErrorMessage name="deadline" component="div" className="text-danger" />
+                        </BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3">
+                          <BootstrapForm.Label htmlFor="dueDate">Due Date</BootstrapForm.Label>
+                          <Field name="dueDate" type="date" className="form-control" />
+                          <ErrorMessage name="dueDate" component="div" className="text-danger" />
+                        </BootstrapForm.Group>
+                        <BootstrapForm.Group className="mb-3">
+                          <BootstrapForm.Label htmlFor="file">Upload File</BootstrapForm.Label>
+                          <input
+                            id="file"
+                            name="file"
+                            type="file"
+                            className="form-control"
+                            onChange={(event) => {
+                              setFieldValue('file', event.currentTarget.files[0]);
+                            }}
+                          />
+                        </BootstrapForm.Group>
+                        <Button type="submit" variant="primary" disabled={isSubmitting} className="w-100">
+                          Add Content
+                        </Button>
+                      </Form>
+                    )}
+                  </Formik>
+                </Card.Body>
+              </Card>
             </>
           ) : (
             <>
@@ -222,8 +268,8 @@ function Home() {
               <UpcomingTimelines />
             </>
           )}
-        </div>
-      </div>
+        </Col>
+      </Row>
       {modalContent && (
         <ContentModal
           showModal={statusModal}
@@ -231,7 +277,7 @@ function Home() {
           handleClose={() => setStatusModal(false)}
         />
       )}
-    </div>
+    </Container>
   );
 }
 

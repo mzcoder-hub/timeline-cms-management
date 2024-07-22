@@ -1,7 +1,8 @@
 client/node_modules
 database.sqlite
 package-lock.json
-uploads/
+uploads/*
+backups/*
 
 .env
 
